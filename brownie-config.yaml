@@ -1,0 +1,5 @@
+networks:
+  default: ganache-local
+
+wallets: 
+  from_key: ${PRIVATE_KEY}
