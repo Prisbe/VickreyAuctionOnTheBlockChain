@@ -29,14 +29,18 @@ def check_if_auction_open():
         print("The auction is not open\n")
 
 
-def sell_nft():
+def sell_nft(timeOfAuction):
     account = get_account()
     sealed_bid_auction = Sealed_Bid_Auction[-1]
-    sealed_bid_auction.sell_nft(100, {"from": account})
+    sealed_bid_auction.sell_nft(timeOfAuction, {"from": account})
+
+
+def submit_bid(accountAddress):
+    sealed_bid_auction = Sealed_Bid_Auction[-1]
 
 
 def main():
     getOwner()
     getNFT()
-    sell_nft()
+    sell_nft(100)
     check_if_auction_open()

@@ -9,8 +9,8 @@ contract Sealed_Bid_Auction {
     bool public auction_open = false;
     uint256 public auction_end_time = 0;
 
-    address[] public bidderAddresses;
-    mapping(address => uint256) public addressToAmountBidded;
+    address[] bidderAddresses;
+    mapping(address => uint256) addressToAmountBidded;
 
     address public pendingWinner;
     uint256 public pendingPaymentAmnt = 0;
@@ -27,8 +27,16 @@ contract Sealed_Bid_Auction {
         return DOGGO_NFT;
     }
 
+    function get_pendingWinner_and_price()
+        public
+        view
+        returns (address, uint256)
+    {
+        return (pendingWinner, pendingPaymentAmnt);
+    }
+
     modifier onlyOwner() {
-        require(msg.sender == owner);
+        require(msg.sender == owner, "You are not the owner");
         _; // The sell_nft() function will run after checking that the owner called the function
     }
 
@@ -54,8 +62,13 @@ contract Sealed_Bid_Auction {
     }
 
     modifier auction_open_check_bidder() {
-        require(auction_open == true);
-        require(check_if_bidded_before() == false); //They Have Not Already Submitted A Bid
+        require(auction_open == true, "The auction is not open");
+        require(
+            block.timestamp < auction_end_time,
+            "The auction no longer open"
+        ); //Check this in case no one has calculated results yet
+        require(msg.sender != owner, "The owner cannot bid");
+        require(check_if_bidded_before() == false, "You have already bidded");
         _;
     }
 
@@ -87,8 +100,11 @@ contract Sealed_Bid_Auction {
     }
 
     modifier auction_ended() {
-        require(block.timestamp > auction_end_time);
-        require(auction_open == true);
+        require(
+            block.timestamp > auction_end_time,
+            "The auction has not ended"
+        );
+        require(auction_open == true, "The auction is not open");
         _;
     }
 
@@ -99,8 +115,11 @@ contract Sealed_Bid_Auction {
     }
 
     modifier only_winner() {
-        require(msg.sender == pendingWinner);
-        require(msg.value == pendingPaymentAmnt);
+        require(msg.sender == pendingWinner, "You are not the pending winner");
+        require(
+            msg.value == pendingPaymentAmnt,
+            "Please send the amount of ETH bidded"
+        );
         _;
     }
 
