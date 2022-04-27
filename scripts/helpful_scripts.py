@@ -1,3 +1,4 @@
+from audioop import add
 from brownie import network, config, accounts, Sealed_Bid_Auction
 from web3 import Web3
 import datetime
@@ -48,7 +49,7 @@ def sell_nft(ownerAddress, timeOfAuction):
     sealed_bid_auction = Sealed_Bid_Auction[-1]
     sealed_bid_auction.sell_nft(timeOfAuction, {"from": ownerAddress})
     print(
-        f"The owner at address: {ownerAddress} has initiated an auction of length {timeOfAuction} in seconds\n"
+        f"The owner at address: {ownerAddress} has initiated an auction of length {timeOfAuction} seconds\n"
     )
 
 
@@ -66,5 +67,14 @@ def find_winner(address):
     pendingwinner, pendingpayment = sealed_bid_auction.get_pendingWinner_and_price()
     print(f"Address {address} has initiated the results\n")
     print(
-        f"The winner is account {pendingwinner} and they need to pay the {pendingpayment} ETH\n"
+        f"The winner is account {pendingwinner} and they need to pay {Web3.fromWei(pendingpayment, 'ether')} ETH\n"
     )
+
+
+def initiate_transfer(address, eth):
+    sealed_bid_auction = Sealed_Bid_Auction[-1]
+    current_owner = sealed_bid_auction.get_owner()
+    sealed_bid_auction.transfer_ownership(
+        {"from": address, "amount": Web3.toWei(eth, "ether")}
+    )
+    print(f"Address: {address} has sent {eth} ETH to {current_owner}\n")

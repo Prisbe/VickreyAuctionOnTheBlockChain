@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.6;
+pragma solidity >=0.8.0;
 
 contract Sealed_Bid_Auction {
     address public owner;
@@ -82,27 +82,33 @@ contract Sealed_Bid_Auction {
         address highestBidder;
         uint256 secondHighest = 0;
 
-        for (uint256 i = 0; i < bidderAddresses.length; i++) {
-            if (addressToAmountBidded[bidderAddresses[i]] > highestBid) {
-                highestBid = addressToAmountBidded[bidderAddresses[i]];
-                highestBidder = bidderAddresses[i];
+        //If there is only one bidder, they will only pay what they bid
+        if (bidderAddresses.length == 1) {
+            highestBidder = bidderAddresses[0];
+            secondHighest = addressToAmountBidded[bidderAddresses[0]];
+        } else {
+            for (uint256 i = 0; i < bidderAddresses.length; i++) {
+                if (addressToAmountBidded[bidderAddresses[i]] > highestBid) {
+                    highestBid = addressToAmountBidded[bidderAddresses[i]];
+                    highestBidder = bidderAddresses[i];
+                }
+            }
+
+            for (uint256 i = 0; i < bidderAddresses.length; i++) {
+                if (highestBidder == bidderAddresses[i]) continue;
+                else if (
+                    addressToAmountBidded[bidderAddresses[i]] > secondHighest
+                ) secondHighest = addressToAmountBidded[bidderAddresses[i]];
             }
         }
-
-        for (uint256 i = 0; i < bidderAddresses.length; i++) {
-            if (highestBidder == bidderAddresses[i]) continue;
-            else if (addressToAmountBidded[bidderAddresses[i]] > secondHighest)
-                secondHighest = addressToAmountBidded[bidderAddresses[i]];
-        }
-
         pendingWinner = highestBidder;
         pendingPaymentAmnt = secondHighest;
     }
 
     modifier auction_ended() {
         require(
-            block.timestamp > auction_end_time,
-            "The auction has not ended"
+            block.timestamp + 10 seconds >= auction_end_time,
+            "The auction is not over"
         );
         require(auction_open == true, "The auction is not open");
         _;
@@ -118,7 +124,7 @@ contract Sealed_Bid_Auction {
         require(msg.sender == pendingWinner, "You are not the pending winner");
         require(
             msg.value == pendingPaymentAmnt,
-            "Please send the amount of ETH bidded"
+            "Please send the amount of ETH for 'pendingAmnt' "
         );
         _;
     }
