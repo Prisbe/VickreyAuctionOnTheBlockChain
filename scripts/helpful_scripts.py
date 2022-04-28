@@ -45,9 +45,11 @@ def get_end_time():
     return time
 
 
-def sell_nft(ownerAddress, timeOfAuction):
+def sell_nft(ownerAddress, timeOfAuction, base_price):
     sealed_bid_auction = Sealed_Bid_Auction[-1]
-    sealed_bid_auction.sell_nft(timeOfAuction, {"from": ownerAddress})
+    sealed_bid_auction.sell_nft(
+        timeOfAuction, Web3.toWei(base_price, "ether"), {"from": ownerAddress}
+    )
     print(
         f"The owner at address: {ownerAddress} has initiated an auction of length {timeOfAuction} seconds\n"
     )
@@ -66,9 +68,12 @@ def find_winner(address):
     sealed_bid_auction.get_auction_results({"from": address})
     pendingwinner, pendingpayment = sealed_bid_auction.get_pendingWinner_and_price()
     print(f"Address {address} has initiated the results\n")
-    print(
-        f"The winner is account {pendingwinner} and they need to pay {Web3.fromWei(pendingpayment, 'ether')} ETH\n"
-    )
+    if pendingpayment == 0:
+        print("Looks like no one placed any bids!\n")
+    else:
+        print(
+            f"The winner is account {pendingwinner} and they need to pay {Web3.fromWei(pendingpayment, 'ether')} ETH\n"
+        )
 
 
 def initiate_transfer(address, eth):
@@ -78,3 +83,11 @@ def initiate_transfer(address, eth):
         {"from": address, "amount": Web3.toWei(eth, "ether")}
     )
     print(f"Address: {address} has sent {eth} ETH to {current_owner}\n")
+
+
+def revert_to_owner(address):
+    sealed_bid_auction = Sealed_Bid_Auction[-1]
+    sealed_bid_auction.revert_to_owner({"from": address})
+    print(
+        f"Ok the DOGGO NFT has been returned to {address} and is ready to be aucitoned again!\n"
+    )

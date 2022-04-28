@@ -23,7 +23,7 @@ def run():
 
     print("Ok well let's get the owner to sell!")
 
-    sell_nft(accounts[0], 10)
+    sell_nft(accounts[0], 10, 0.001)
 
     print("Lets check if the auction is open again!\n")
 

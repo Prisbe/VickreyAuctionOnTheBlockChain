@@ -7,7 +7,10 @@ contract Sealed_Bid_Auction {
     string public DOGGO_NFT =
         "https://drive.google.com/file/d/1ULKxa4PFUAg0Q7NsyfErE3p6_669Kf5u/view?usp=sharing";
     bool public auction_open = false;
+    bool public no_one_bidded = false;
+    bool public pending_sale = false;
     uint256 public auction_end_time = 0;
+    uint256 public base_price = 0;
 
     address[] bidderAddresses;
     mapping(address => uint256) addressToAmountBidded;
@@ -40,14 +43,13 @@ contract Sealed_Bid_Auction {
         _; // The sell_nft() function will run after checking that the owner called the function
     }
 
-    function sell_nft(uint256 _auction_time)
+    function sell_nft(uint256 _auction_time, uint256 _base_price)
         public
         onlyOwner
-        returns (uint256)
     {
         auction_open = true;
         auction_end_time = block.timestamp + _auction_time;
-        return auction_end_time;
+        base_price = _base_price;
     }
 
     function check_if_auction_open() public view returns (bool, uint256) {
@@ -69,10 +71,15 @@ contract Sealed_Bid_Auction {
         ); //Check this in case no one has calculated results yet
         require(msg.sender != owner, "The owner cannot bid");
         require(check_if_bidded_before() == false, "You have already bidded");
+
         _;
     }
 
     function submit_bid(uint256 _ethAmount) public auction_open_check_bidder {
+        require(
+            _ethAmount >= base_price,
+            "Bid price must be greater than base_price"
+        );
         bidderAddresses.push(msg.sender);
         addressToAmountBidded[msg.sender] = _ethAmount;
     }
@@ -82,10 +89,10 @@ contract Sealed_Bid_Auction {
         address highestBidder;
         uint256 secondHighest = 0;
 
-        //If there is only one bidder, they will only pay what they bid
+        //If there is only one bidder, they will only pay the base_price
         if (bidderAddresses.length == 1) {
             highestBidder = bidderAddresses[0];
-            secondHighest = addressToAmountBidded[bidderAddresses[0]];
+            secondHighest = base_price;
         } else {
             for (uint256 i = 0; i < bidderAddresses.length; i++) {
                 if (addressToAmountBidded[bidderAddresses[i]] > highestBid) {
@@ -116,8 +123,10 @@ contract Sealed_Bid_Auction {
 
     function get_auction_results() public auction_ended {
         auction_open = false;
-        auction_end_time = 0;
-        find_winner_and_price();
+        if (bidderAddresses.length > 0) {
+            pending_sale = true;
+            find_winner_and_price();
+        } else no_one_bidded = true;
     }
 
     modifier only_winner() {
@@ -140,5 +149,25 @@ contract Sealed_Bid_Auction {
 
         pendingWinner = address(0);
         pendingPaymentAmnt = 0;
+        base_price = 0;
+        auction_end_time = 0;
+        pending_sale = false;
+    }
+
+    function revert_to_owner() public onlyOwner {
+        require(block.timestamp >= auction_end_time + 2 days || no_one_bidded);
+
+        //Need To Reset the Dictionary and Array of bidders
+        for (uint256 i = 0; i < bidderAddresses.length; i++)
+            addressToAmountBidded[bidderAddresses[i]] = 0; //Reset the Dictionary
+        bidderAddresses = new address[](0); //Reset the array of Bidders
+
+        pendingWinner = address(0);
+        pendingPaymentAmnt = 0;
+
+        no_one_bidded = false;
+        pending_sale = false;
+        auction_end_time = 0;
+        base_price = 0;
     }
 }
